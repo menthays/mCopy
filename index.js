@@ -1,7 +1,13 @@
 'use strict';
 const path = require('path');
-const {app, BrowserWindow, Menu} = require('electron');
+const {
+	app,
+	BrowserWindow,
+	Menu,
+	ipcRenderer,
+} = require('electron');
 /// const {autoUpdater} = require('electron-updater');
+
 const {is} = require('electron-util');
 const unhandled = require('electron-unhandled');
 const debug = require('electron-debug');
@@ -9,6 +15,7 @@ const contextMenu = require('electron-context-menu');
 const config = require('./config');
 const menu = require('./menu');
 const packageJson = require('./package.json');
+const clipboard = require('./clipboard');
 
 unhandled();
 debug();
@@ -35,7 +42,10 @@ const createMainWindow = async () => {
 		title: app.name,
 		show: false,
 		width: 600,
-		height: 400
+		height: 400,
+    webPreferences: {
+			nodeIntegration: true,
+		},
 	});
 
 	win.on('ready-to-show', () => {
@@ -47,6 +57,16 @@ const createMainWindow = async () => {
 		// For multiple windows store them in an array
 		mainWindow = undefined;
 	});
+
+	win.webContents.on('did-finish-load', () => {
+		clipboard.on('text-copied', (text) => {
+			win.webContents.send('text-copied', text)
+		})
+		// clipboard.on('image-copied', (image) => {
+	
+		// })
+		clipboard.startWatching()
+	})
 
 	await win.loadFile(path.join(__dirname, 'index.html'));
 
